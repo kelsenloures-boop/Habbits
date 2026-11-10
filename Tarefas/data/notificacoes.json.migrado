@@ -1,0 +1,98 @@
+[
+    {
+        "id": 12,
+        "icon": "check",
+        "titulo": "Tarefa concluída",
+        "texto": "\"Reunião de equipa semanal\"",
+        "tempo": "15:04",
+        "lida": false
+    },
+    {
+        "id": 11,
+        "icon": "clock",
+        "titulo": "Tarefa reaberta",
+        "texto": "\"Reunião de equipa semanal\"",
+        "tempo": "15:04",
+        "lida": false
+    },
+    {
+        "id": 10,
+        "icon": "check",
+        "titulo": "Tarefa concluída",
+        "texto": "\"Reunião de equipa semanal\"",
+        "tempo": "15:03",
+        "lida": false
+    },
+    {
+        "id": 9,
+        "icon": "clock",
+        "titulo": "Tarefa reaberta",
+        "texto": "\"Reunião de equipa semanal\"",
+        "tempo": "15:03",
+        "lida": false
+    },
+    {
+        "id": 8,
+        "icon": "check",
+        "titulo": "Tarefa concluída",
+        "texto": "\"Reunião de equipa semanal\"",
+        "tempo": "15:03",
+        "lida": false
+    },
+    {
+        "id": 7,
+        "icon": "check",
+        "titulo": "Nova tarefa criada",
+        "texto": "\"Estudar ingles\" agendada para 10\/11",
+        "tempo": "15:00",
+        "lida": false
+    },
+    {
+        "id": 6,
+        "icon": "alert",
+        "titulo": "Tarefa apagada",
+        "texto": "\"Demo CRUD via browser\"",
+        "tempo": "14:56",
+        "lida": false
+    },
+    {
+        "id": 5,
+        "icon": "check",
+        "titulo": "Tarefa concluída",
+        "texto": "\"Demo CRUD via browser\"",
+        "tempo": "14:56",
+        "lida": false
+    },
+    {
+        "id": 4,
+        "icon": "check",
+        "titulo": "Nova tarefa criada",
+        "texto": "\"Demo CRUD via browser\" agendada para 10\/11",
+        "tempo": "14:55",
+        "lida": false
+    },
+    {
+        "id": 3,
+        "icon": "alert",
+        "titulo": "Tarefa apagada",
+        "texto": "\"Teste AJAX\"",
+        "tempo": "14:51",
+        "lida": false
+    },
+    {
+        "id": 2,
+        "icon": "check",
+        "titulo": "Tarefa concluída",
+        "texto": "\"Teste AJAX\"",
+        "tempo": "14:51",
+        "lida": false
+    },
+    {
+        "id": 1,
+        "icon": "check",
+        "titulo": "Nova tarefa criada",
+        "texto": "\"Teste AJAX\" agendada para 10\/11",
+        "tempo": "14:51",
+        "lida": false
+    }
+]

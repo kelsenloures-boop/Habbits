@@ -1,0 +1,110 @@
+[
+    {
+        "id": 1,
+        "titulo": "Reunião de equipa semanal",
+        "data": "2026-11-10",
+        "hora": "09:30",
+        "prioridade": "alta",
+        "estado": "concluida",
+        "cat": "Trabalho"
+    },
+    {
+        "id": 2,
+        "titulo": "Enviar relatório mensal",
+        "data": "2026-11-10",
+        "hora": "12:00",
+        "prioridade": "alta",
+        "estado": "pendente",
+        "cat": "Trabalho"
+    },
+    {
+        "id": 3,
+        "titulo": "Revisar proposta do cliente",
+        "data": "2026-11-10",
+        "hora": "15:00",
+        "prioridade": "media",
+        "estado": "pendente",
+        "cat": "Clientes"
+    },
+    {
+        "id": 4,
+        "titulo": "Treino na academia",
+        "data": "2026-11-10",
+        "hora": "18:30",
+        "prioridade": "baixa",
+        "estado": "concluida",
+        "cat": "Pessoal"
+    },
+    {
+        "id": 5,
+        "titulo": "Pagar fatura de energia",
+        "data": "2026-11-09",
+        "hora": "23:59",
+        "prioridade": "alta",
+        "estado": "pendente",
+        "cat": "Pessoal"
+    },
+    {
+        "id": 6,
+        "titulo": "Backup semanal dos projetos",
+        "data": "2026-11-09",
+        "hora": "22:00",
+        "prioridade": "media",
+        "estado": "concluida",
+        "cat": "Trabalho"
+    },
+    {
+        "id": 7,
+        "titulo": "Escrever artigo no blog",
+        "data": "2026-11-11",
+        "hora": "10:00",
+        "prioridade": "baixa",
+        "estado": "pendente",
+        "cat": "Pessoal"
+    },
+    {
+        "id": 8,
+        "titulo": "Atualizar dependências do projeto",
+        "data": "2026-11-11",
+        "hora": "14:00",
+        "prioridade": "media",
+        "estado": "pendente",
+        "cat": "Trabalho"
+    },
+    {
+        "id": 9,
+        "titulo": "Compra do mês",
+        "data": "2026-11-11",
+        "hora": "17:00",
+        "prioridade": "baixa",
+        "estado": "pendente",
+        "cat": "Pessoal"
+    },
+    {
+        "id": 10,
+        "titulo": "Renovar licenças de software",
+        "data": "2026-11-13",
+        "hora": "11:00",
+        "prioridade": "media",
+        "estado": "pendente",
+        "cat": "Trabalho"
+    },
+    {
+        "id": 11,
+        "titulo": "Consulta de rotina",
+        "data": "2026-11-15",
+        "hora": "16:30",
+        "prioridade": "baixa",
+        "estado": "pendente",
+        "cat": "Saúde"
+    },
+    {
+        "id": 12,
+        "titulo": "Estudar ingles",
+        "data": "2026-11-10",
+        "hora": "17:00",
+        "prioridade": "alta",
+        "estado": "pendente",
+        "cat": "Pessoal"
+    }
+]
