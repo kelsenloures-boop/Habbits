@@ -46,15 +46,36 @@ function db_migrar_esquema(PDO $pdo): void {
         'lembrete'         => "ALTER TABLE tarefas ADD COLUMN lembrete INTEGER NOT NULL DEFAULT 15",
         'lembrete_enviado' => "ALTER TABLE tarefas ADD COLUMN lembrete_enviado INTEGER NOT NULL DEFAULT 0",
         'utilizador_id'    => "ALTER TABLE tarefas ADD COLUMN utilizador_id INTEGER NOT NULL DEFAULT 1",
+        'alarme_som'       => "ALTER TABLE tarefas ADD COLUMN alarme_som INTEGER NOT NULL DEFAULT 0",
     ];
     foreach ($aFalta as $coluna => $sql) {
         if (!in_array($coluna, $colunas, true)) $pdo->exec($sql);
     }
 
-    // notificações ligadas ao utilizador
+    // notificações ligadas ao utilizador e à origem (tarefa/alarme)
     $colsN = db_colunas($pdo, 'notificacoes');
-    if (!in_array('utilizador_id', $colsN, true)) {
-        $pdo->exec("ALTER TABLE notificacoes ADD COLUMN utilizador_id INTEGER NOT NULL DEFAULT 1");
+    $novasNotif = [
+        'utilizador_id' => "ALTER TABLE notificacoes ADD COLUMN utilizador_id INTEGER NOT NULL DEFAULT 1",
+        'tarefa_id'     => "ALTER TABLE notificacoes ADD COLUMN tarefa_id INTEGER",
+        'som'           => "ALTER TABLE notificacoes ADD COLUMN som INTEGER NOT NULL DEFAULT 0",
+        'lida_em'       => "ALTER TABLE notificacoes ADD COLUMN lida_em TEXT",
+    ];
+    foreach ($novasNotif as $coluna => $sql) {
+        if (!in_array($coluna, $colsN, true)) $pdo->exec($sql);
+    }
+
+    // Índices de leitura (depois das colunas garantidas)
+    $pdo->exec("
+        CREATE INDEX IF NOT EXISTS idx_notificacoes_utilizador_lida
+            ON notificacoes (utilizador_id, lida);
+        CREATE INDEX IF NOT EXISTS idx_notificacoes_utilizador_id
+            ON notificacoes (utilizador_id, id DESC);
+    ");
+
+    // Preferências: arranque automático (coluna adicionada depois da tabela original)
+    $colsP = db_colunas($pdo, 'preferencias');
+    if (!in_array('iniciar_com_windows', $colsP, true)) {
+        $pdo->exec("ALTER TABLE preferencias ADD COLUMN iniciar_com_windows INTEGER NOT NULL DEFAULT 0");
     }
 
     // Instalação existente (tem tarefas, ainda sem utilizadores) → conta demo
@@ -101,19 +122,82 @@ function db_criar_esquema(PDO $pdo): void {
             cat               TEXT    NOT NULL DEFAULT 'Pessoal',
             lembrete          INTEGER NOT NULL DEFAULT 15,
             lembrete_enviado  INTEGER NOT NULL DEFAULT 0,
+            alarme_som        INTEGER NOT NULL DEFAULT 0,
             criada_em         TEXT    NOT NULL,
             atualizada_em     TEXT    NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS notificacoes (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            icon       TEXT    NOT NULL DEFAULT 'bell',
-            titulo     TEXT    NOT NULL,
-            texto      TEXT    NOT NULL,
-            tempo      TEXT    NOT NULL,
-            lida       INTEGER NOT NULL DEFAULT 0,
-            criada_em  TEXT    NOT NULL
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            icon           TEXT    NOT NULL DEFAULT 'bell',
+            titulo         TEXT    NOT NULL,
+            texto          TEXT    NOT NULL,
+            tempo          TEXT    NOT NULL,
+            lida           INTEGER NOT NULL DEFAULT 0,
+            criada_em      TEXT    NOT NULL,
+            utilizador_id  INTEGER NOT NULL DEFAULT 1,
+            tarefa_id      INTEGER,
+            som            INTEGER NOT NULL DEFAULT 0,
+            lida_em        TEXT
         );
+
+        /* Preferências de notificações/sons por utilizador.
+           Uma linha por utilizador; criada apenas quando é guardada. */
+        CREATE TABLE IF NOT EXISTS preferencias (
+            utilizador_id           INTEGER PRIMARY KEY,
+            canal                   TEXT    NOT NULL DEFAULT 'interno'
+                                    CHECK (canal IN ('interno','windows','desligado')),
+            sons                    INTEGER NOT NULL DEFAULT 1,
+            som_alarme              INTEGER NOT NULL DEFAULT 0,
+            volume                  INTEGER NOT NULL DEFAULT 80,
+            mostrar_segundo_plano   INTEGER NOT NULL DEFAULT 1,
+            abrir_ao_alarme         INTEGER NOT NULL DEFAULT 1,
+            fechar_para_bandeja     INTEGER NOT NULL DEFAULT 1,
+            snooze_min              INTEGER NOT NULL DEFAULT 10,
+            limite_som_seg          INTEGER NOT NULL DEFAULT 120,
+            iniciar_com_windows     INTEGER NOT NULL DEFAULT 0,
+            atualizada_em           TEXT    NOT NULL DEFAULT ''
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_tarefas_utilizador_data
+            ON tarefas (utilizador_id, data, hora);
+
+        /* Alarmes: definição + ocorrências (uma linha por disparo previsto). */
+        CREATE TABLE IF NOT EXISTS alarmes (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            utilizador_id  INTEGER NOT NULL DEFAULT 1,
+            titulo         TEXT    NOT NULL,
+            mensagem       TEXT    NOT NULL DEFAULT '',
+            hora           TEXT    NOT NULL,
+            data           TEXT,
+            recorrencia    TEXT    NOT NULL DEFAULT 'diario'
+                            CHECK (recorrencia IN ('unico','diario','semanal','dias')),
+            dias_semana    TEXT    NOT NULL DEFAULT '',
+            som            INTEGER NOT NULL DEFAULT 1,
+            ativo          INTEGER NOT NULL DEFAULT 1,
+            adiamento_min  INTEGER NOT NULL DEFAULT 10,
+            criado_em      TEXT    NOT NULL,
+            atualizado_em  TEXT    NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS alarme_ocorrencias (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            alarme_id      INTEGER NOT NULL,
+            utilizador_id  INTEGER NOT NULL,
+            previsto_para  TEXT    NOT NULL,
+            estado         TEXT    NOT NULL DEFAULT 'a_tocar'
+                            CHECK (estado IN ('a_tocar','adiado','desligado','perdido')),
+            adiado_para    TEXT,
+            adiamentos     INTEGER NOT NULL DEFAULT 0,
+            desligado_em   TEXT,
+            criado_em      TEXT    NOT NULL,
+            UNIQUE (alarme_id, previsto_para)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_alarmes_utilizador
+            ON alarmes (utilizador_id, ativo);
+        CREATE INDEX IF NOT EXISTS idx_alarme_ocorrencias_utilizador
+            ON alarme_ocorrencias (utilizador_id, estado, adiado_para);
     ");
 }
 

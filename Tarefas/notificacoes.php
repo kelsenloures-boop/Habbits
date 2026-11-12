@@ -4,7 +4,7 @@ require_once __DIR__ . '/inc/partials.php';
 exigir_login();
 $uid = uid_atual();
 
-/* Ações de formulário */
+/* Ações de formulário (fallback sem JavaScript) */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verificar();
     $acao = $_POST['acao'] ?? '';
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($acao === 'marcar_todas') {
         notificacoes_marcar_todas_lidas($uid);
-        flash('ok', 'Todas marcadas como lidas.');
+        flash('ok', 'Todas as notificações foram marcadas como lidas.');
     }
     if ($acao === 'limpar_todas') {
         $n = notificacoes_limpar($uid);
@@ -30,13 +30,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $nots = notificacoes_carregar($uid, 100);
-$nNaoLidas = count(array_filter($nots, fn($n) => empty($n['lida'])));
+$nNaoLidas = notificacoes_contar_nao_lidas($uid);
 $iconeNot = fn(string $i) => ['alert' => '⚠️', 'check' => '✅', 'clock' => '🕒', 'bell' => '🔔'][$i] ?? '🔔';
 $flashMsg = flash_pegar();
 
+$iconeSino = icone('notificacoes');
+$iconeCheck = icone('check');
+
 html_inicio('Notificações', 'notificacoes');
-$acoes = '<button class="btn-secundario" form="formTodas" type="submit" ' . ($nNaoLidas ? '' : 'disabled') . '>Marcar todas como lidas</button>';
-html_topo('Notificações', $nNaoLidas . ' não lida' . ($nNaoLidas === 1 ? '' : 's'), false, $acoes);
+$acoes = '<button type="submit" form="formTodas" class="theme-button" id="btnMarcarTodas" ' . ($nNaoLidas ? '' : 'disabled') . '>'
+    . $iconeCheck . '<span>Marcar todas como lidas</span></button>';
+html_topo(
+    'Notificações',
+    '<b id="contadorNaoLidas">' . $nNaoLidas . '</b> não lida' . ($nNaoLidas === 1 ? '' : 's')
+        . ' <span class="date-separator">/</span> lembretes e novidades',
+    false,
+    $acoes
+);
 
 /* Formulário de "marcar todas" (fora do fluxo para o botão do topo) */
 ?>
@@ -45,49 +55,59 @@ html_topo('Notificações', $nNaoLidas . ' não lida' . ($nNaoLidas === 1 ? '' :
     <input type="hidden" name="acao" value="marcar_todas">
 </form>
 
-<?php if ($flashMsg): ?>
-<div class="alerta <?= $flashMsg['tipo'] ?>"><?= htmlspecialchars($flashMsg['msg']) ?></div>
-<?php endif; ?>
+<div class="page-block">
+    <?= flash_html($flashMsg) ?>
 
-<section class="card painel">
-    <?php if (!$nots): ?>
-    <div class="vazio">📭 Sem notificações. Criar ou concluir tarefas gera avisos aqui.</div>
-    <?php else: ?>
-    <ul class="lista-notif notifs-pagina">
-        <?php foreach ($nots as $n): ?>
-        <li class="<?= $n['lida'] ? 'lida' : 'nao-lida' ?>">
-            <span class="notif-icone"><?= $iconeNot($n['icon']) ?></span>
-            <div>
-                <strong><?= htmlspecialchars($n['titulo']) ?></strong>
-                <p><?= htmlspecialchars($n['texto']) ?></p>
-                <small><?= htmlspecialchars($n['tempo']) ?></small>
-            </div>
-            <div class="notif-acoes-inline">
-                <?php if (empty($n['lida'])): ?>
-                <form method="post">
-                    <?= csrf_campo() ?>
-                    <input type="hidden" name="id" value="<?= $n['id'] ?>">
-                    <button class="btn-secundario btn-sm" name="acao" value="marcar_lida">Marcar lida</button>
-                </form>
-                <?php endif; ?>
-                <form method="post" class="form-inline">
-                    <?= csrf_campo() ?>
-                    <input type="hidden" name="id" value="<?= $n['id'] ?>">
-                    <button class="btn-secundario btn-sm perigo" name="acao" value="apagar" title="Eliminar">✕</button>
-                </form>
-            </div>
-        </li>
-        <?php endforeach; ?>
-    </ul>
-    <footer class="painel-rodape">
-        <form method="post">
-            <?= csrf_campo() ?>
-            <button class="btn-secundario btn-sm perigo" name="acao" value="limpar_todas">🗑 Limpar todas</button>
-        </form>
+    <section class="notifs-card">
+        <ul class="notifs-list notifs-pagina" id="listaNotifPagina"
+            data-lista-notif data-acoes="completas" data-limite="0">
+            <?php if (!$nots): ?>
+            <li class="empty-state">
+                <span class="empty-icon"><?= $iconeSino ?></span>
+                <strong>Tudo em silêncio</strong>
+                <small>Criar ou concluir tarefas gera avisos aqui.</small>
+            </li>
+            <?php else: ?>
+            <?php foreach ($nots as $n): ?>
+            <li class="notif-item <?= $n['lida'] ? 'lida' : 'nao-lida' ?>" data-id="<?= (int)$n['id'] ?>">
+                <span class="notif-icone"><?= $iconeNot($n['icon']) ?></span>
+                <div class="notif-body">
+                    <strong><?= htmlspecialchars($n['titulo']) ?></strong>
+                    <p><?= htmlspecialchars($n['texto']) ?></p>
+                    <small><?= htmlspecialchars($n['tempo']) ?></small>
+                </div>
+                <div class="notif-acoes-inline">
+                    <?php if (empty($n['lida'])): ?>
+                    <form method="post" class="acao-notif" data-acao="marcar_lida" data-id="<?= (int)$n['id'] ?>">
+                        <?= csrf_campo() ?>
+                        <input type="hidden" name="id" value="<?= (int)$n['id'] ?>">
+                        <input type="hidden" name="acao" value="marcar_lida">
+                        <button type="submit" class="btn-secundario btn-sm">Marcar lida</button>
+                    </form>
+                    <?php endif; ?>
+                    <form method="post" class="acao-notif" data-acao="apagar" data-id="<?= (int)$n['id'] ?>">
+                        <?= csrf_campo() ?>
+                        <input type="hidden" name="id" value="<?= (int)$n['id'] ?>">
+                        <input type="hidden" name="acao" value="apagar">
+                        <button type="submit" class="btn-secundario btn-sm perigo" title="Eliminar" aria-label="Eliminar notificação">✕</button>
+                    </form>
+                </div>
+            </li>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </ul>
+        <footer class="notifs-footer" data-rodape-notif <?= $nots ? '' : 'style="display:none"' ?>>
+            <form method="post" class="acao-notif" data-acao="limpar_todas">
+                <?= csrf_campo() ?>
+                <button type="submit" class="btn-secundario btn-sm perigo">🗑 Limpar todas</button>
+            </form>
+        </footer>
+    </section>
+
+    <footer class="dashboard-footer">
+        <span>Menos ruído, mais foco.</span>
+        <span>Habbits <span class="footer-separator">·</span> <?= substr(data_local(), 0, 4) ?></span>
     </footer>
-    <?php endif; ?>
-</section>
-
-<footer class="rodape">Habbits · PHP puro · v0.5</footer>
+</div>
 
 <?php html_fim(); ?>

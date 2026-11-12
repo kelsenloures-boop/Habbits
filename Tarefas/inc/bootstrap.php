@@ -12,6 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/dados.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/repositorio.php';
+require_once __DIR__ . '/alarmes.php';
 
 /* ================================================================
  * Sessão / autenticação
@@ -63,13 +64,38 @@ function csrf_verificar(): void {
     }
 }
 
+/** Validade de uma mensagem flash, em segundos. Evita avisos antigos. */
+const FLASH_VALIDADE = 120;
+
 /** grava uma mensagem para a página seguinte */
 function flash(string $tipo, string $msg): void {
-    $_SESSION['flash'] = ['tipo' => $tipo, 'msg' => $msg];
+    $_SESSION['flash'] = ['tipo' => $tipo, 'msg' => $msg, 'criado' => time()];
 }
 
+/**
+ * Lê (e elimina) a mensagem flash. Uma mensagem só pode ser mostrada uma vez
+ * e mensagens antigas (navegação interrompida, separador esquecido) são
+ * descartadas em vez de reaparecerem numa página posterior.
+ */
 function flash_pegar(): ?array {
     $f = $_SESSION['flash'] ?? null;
     unset($_SESSION['flash']);
+
+    if (!is_array($f)) return null;
+
+    $criado = (int)($f['criado'] ?? 0);
+    if ($criado > 0 && (time() - $criado) > FLASH_VALIDADE) return null;
+
     return $f;
+}
+
+/** Markup único das mensagens flash (alerta + fecha sozinho via core.js). */
+function flash_html(?array $f): string {
+    if (!$f) return '';
+
+    $tipo = (string)($f['tipo'] ?? 'ok');
+    if (!in_array($tipo, ['ok', 'erro', 'aviso', 'info'], true)) $tipo = 'ok';
+
+    return '<div class="alerta ' . $tipo . '" role="status" aria-live="polite">'
+        . htmlspecialchars((string)($f['msg'] ?? '')) . '</div>';
 }
