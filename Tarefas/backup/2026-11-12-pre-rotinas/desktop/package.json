@@ -1,0 +1,16 @@
+{
+  "name": "habbits-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Host desktop (Electron) para a app Habbits em PHP/SQLite. Mantém janela, bandeja, arranque automático e notificações nativas.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "icons": "node tools/gerar-icone.js"
+  },
+  "devDependencies": {
+    "electron": "^45.3.0",
+    "electron-builder": "^26.18.0"
+  }
+}
