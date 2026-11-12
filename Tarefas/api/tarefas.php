@@ -67,13 +67,16 @@ if ($metodo === 'POST') {
         resposta(['ok' => false, 'erro' => 'Título e data são obrigatórios.'] + estado_atual($uid), 422);
     }
 
+    $prioridade = in_array($body['prioridade'] ?? '', prioridades_validas(), true) ? $body['prioridade'] : 'media';
+
     $id = tarefas_criar([
         'titulo'     => mb_substr($titulo, 0, 120),
         'data'       => $data,
         'hora'       => preg_match('/^\d{2}:\d{2}$/', (string)($body['hora'] ?? '')) ? $body['hora'] : '08:00',
-        'prioridade' => in_array($body['prioridade'] ?? '', prioridades_validas(), true) ? $body['prioridade'] : 'media',
+        'prioridade' => $prioridade,
         'cat'        => mb_substr(trim((string)($body['cat'] ?? '')) ?: 'Pessoal', 0, 40),
         'lembrete'   => lembrete_valido($body['lembrete'] ?? 15),
+        'alarme_som' => ($prioridade === 'alta' && !empty($body['alarme_som'])) ? 1 : 0,
     ], $uid);
 
     notificar($uid, 'Nova tarefa criada', '"' . mb_substr($titulo, 0, 60) . '" agendada para ' . date('d/m', strtotime($data)), 'check');
@@ -133,6 +136,14 @@ if ($metodo === 'PATCH') {
     // Mudança de data/hora/lembrete → o lembrete volta a poder disparar
     if (isset($campos['data']) || isset($campos['hora']) || isset($campos['lembrete'])) {
         $campos['lembrete_enviado'] = 0;
+    }
+
+    // Som de alarme: apenas em tarefas de prioridade alta e por opção explícita
+    $prioridadeFinal = $campos['prioridade'] ?? $tarefa['prioridade'];
+    if (array_key_exists('alarme_som', $body)) {
+        $campos['alarme_som'] = ($prioridadeFinal === 'alta' && !empty($body['alarme_som'])) ? 1 : 0;
+    } elseif (isset($campos['prioridade']) && $campos['prioridade'] !== 'alta') {
+        $campos['alarme_som'] = 0;
     }
 
     if ($campos) {
